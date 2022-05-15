@@ -1,0 +1,91 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  slack-golang-app
+
+Parameters:
+  Stage:
+    Type: String
+  DefaultLimitCnt:
+    Type: String
+  SsmRegion:
+    Type: String
+
+Globals:
+  Function:
+    Timeout: 5
+
+Resources:
+  SlackGolangAppApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Stage
+      OpenApiVersion: 3.0.2
+      EndpointConfiguration: 
+        Type: REGIONAL
+      DefinitionBody:
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: openapi.yaml # swaggerファイルのパス指定
+
+  GetNewsListFunction:
+    Type: AWS::Serverless::Function
+    Dependson: [
+      GetNewsListFuncLogGroup,
+      LambdaFunctionBaseRole
+    ]
+    Properties:
+      FunctionName: getNewsList
+      CodeUri: get-news-list/
+      Handler: get-news-list
+      Runtime: go1.x
+      Architectures:
+        - x86_64
+      Tracing: PassThrough
+      MemorySize: 128
+      Timeout: 300
+      Role: !GetAtt LambdaFunctionBaseRole.Arn
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            Path: /list/news
+            Method: POST
+            RestApiId: 
+              Ref: SlackGolangAppApi
+      Environment: 
+        Variables: 
+          DEFAULT_LIMIT_CNT: !Ref DefaultLimitCnt
+          SSM_REGION: !Ref SsmRegion
+
+  GetNewsListFuncLogGroup: # lambda実行ログを保持するロググループ
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/getNewsList
+      RetentionInDays: 7
+
+  LambdaFunctionBaseRole: # lambda共通の実行ロール
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: slack-golang-app-lambda-base-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: 
+              - sts:AssumeRole
+            Principal:
+              Service: 
+                - lambda.amazonaws.com
+      ManagedPolicyArns:
+       - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+       - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
+
+Outputs:
+  GetNewsListAPI:
+    Description: "GetNewsListAPI endpoint URL"
+    Value: !Sub "https://${SlackGolangAppApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/list/news"
+  GetNewsListFunction:
+    Description: "GetNewsListAPI Lambda Function ARN"
+    Value: !GetAtt GetNewsListFunction.Arn

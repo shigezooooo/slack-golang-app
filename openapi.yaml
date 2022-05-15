@@ -1,0 +1,82 @@
+openapi: 3.0.2
+info:
+  description: 'slack-golang-app'
+  version: '1.0.0'
+  title: 
+    'slack-golang-app' # API Gatewayに生成されるAPI名
+paths:
+  /list/news: # APIのパス
+    post: # POSTメソッド
+      summary: 'GetNewsListApi'
+      parameters:
+      - in: header
+        name: "Content-Type"
+        required: true
+        schema:
+          type: string
+      - in: header
+        name: "X-Slack-Signature"
+        required: false
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/challengeRequestModel'
+                - $ref: '#/components/schemas/requestModel'
+      responses:
+        200:
+          description: "200 response"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/challengeResponseModel'
+                  - $ref: '#/components/schemas/responseModel'
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetNewsListFunction.Arn}/invocations
+        passthroughBehavior: when_no_templates
+        httpMethod: POST
+        type: aws_proxy
+
+components:
+  schemas:
+    challengeRequestModel:
+      type: object
+      properties:
+        type:
+          type: string
+        token:
+          type: string
+        challenge:
+          type: string
+    challengeResponseModel:
+      type: object
+      properties:
+        challenge:
+          type: string
+    requestModel:
+      type: object
+      properties:
+        type:
+          type: string
+        token:
+          type: string
+        event:
+          type: object
+          properties:
+            text:
+              type: string
+            channel:
+              type: string
+    responseModel:
+      type: object
+      properties:
+        status:
+          type: integer
+        detail:
+          type: string
