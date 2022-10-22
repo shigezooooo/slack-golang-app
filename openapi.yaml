@@ -5,9 +5,9 @@ info:
   title: 
     'slack-golang-app' # API Gatewayに生成されるAPI名
 paths:
-  /list/news: # APIのパス
+  /get/news: # APIのパス
     post: # POSTメソッド
-      summary: 'GetNewsListApi'
+      summary: 'GetNewsApi'
       parameters:
       - in: header
         name: "Content-Type"
@@ -38,7 +38,7 @@ paths:
                   - $ref: '#/components/schemas/responseModel'
       x-amazon-apigateway-integration:
         uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetNewsListFunction.Arn}/invocations
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetNewsFunction.Arn}/invocations
         passthroughBehavior: when_no_templates
         httpMethod: POST
         type: aws_proxy

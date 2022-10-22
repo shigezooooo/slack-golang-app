@@ -6,7 +6,9 @@ Description: >
 Parameters:
   Stage:
     Type: String
-  DefaultLimitCnt:
+  SsmParamSlackAuthTokenKeyName:
+    Type: String
+  SsmParamSlackAuthTokenValue:
     Type: String
   SsmRegion:
     Type: String
@@ -28,17 +30,25 @@ Resources:
           Name: AWS::Include
           Parameters:
             Location: openapi.yaml # swaggerファイルのパス指定
+  
+  SsmParamSlackAuthKey:
+   Type: AWS::SSM::Parameter
+   Properties:
+     Description: SlackAPI Auth Key
+     Name: !Ref SsmParamSlackAuthTokenKeyName
+     Type: String
+     Value: !Ref SsmParamSlackAuthTokenValue
 
-  GetNewsListFunction:
+  GetNewsFunction:
     Type: AWS::Serverless::Function
     Dependson: [
-      GetNewsListFuncLogGroup,
+      GetNewsFuncLogGroup,
       LambdaFunctionBaseRole
     ]
     Properties:
-      FunctionName: getNewsList
-      CodeUri: get-news-list/
-      Handler: get-news-list
+      FunctionName: getNews
+      CodeUri: get-news/
+      Handler: get-news
       Runtime: go1.x
       Architectures:
         - x86_64
@@ -50,19 +60,19 @@ Resources:
         CatchAll:
           Type: Api
           Properties:
-            Path: /list/news
+            Path: /get/news
             Method: POST
             RestApiId: 
               Ref: SlackGolangAppApi
       Environment: 
         Variables: 
-          DEFAULT_LIMIT_CNT: !Ref DefaultLimitCnt
           SSM_REGION: !Ref SsmRegion
+          SSM_SLACK_AUTH_KEY_NAME: !Ref SsmParamSlackAuthTokenKeyName
 
-  GetNewsListFuncLogGroup: # lambda実行ログを保持するロググループ
+  GetNewsFuncLogGroup: # lambda実行ログを保持するロググループ
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: /aws/lambda/getNewsList
+      LogGroupName: /aws/lambda/getNews
       RetentionInDays: 7
 
   LambdaFunctionBaseRole: # lambda共通の実行ロール
@@ -83,9 +93,9 @@ Resources:
        - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
 
 Outputs:
-  GetNewsListAPI:
-    Description: "GetNewsListAPI endpoint URL"
-    Value: !Sub "https://${SlackGolangAppApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/list/news"
-  GetNewsListFunction:
-    Description: "GetNewsListAPI Lambda Function ARN"
-    Value: !GetAtt GetNewsListFunction.Arn
+  GetNewsAPI:
+    Description: "GetNewsAPI endpoint URL"
+    Value: !Sub "https://${SlackGolangAppApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/get/news"
+  GetNewsFunction:
+    Description: "GetNewsAPI Lambda Function ARN"
+    Value: !GetAtt GetNewsFunction.Arn
