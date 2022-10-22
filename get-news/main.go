@@ -137,16 +137,6 @@ func sendSlackMessage(channel, text string) {
 	}
 }
 
-/// APIGatewayからのリクエストBodyを処理用に変換する
-func getRequestBody(bodyText string) (*RequestBody, error) {
-	var body RequestBody
-	err := json.Unmarshal([]byte(bodyText), &body)
-	if err != nil {
-		return nil, err
-	}
-	return &body, nil
-}
-
 /// パラメータストアから値を取得する
 func fetchParameterStore(paramName string) (string, error) {
 
@@ -174,6 +164,16 @@ func getEnv(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+/// APIGatewayからのリクエストBodyを処理用に変換する
+func getRequestBody(bodyText string) (*RequestBody, error) {
+	var body RequestBody
+	err := json.Unmarshal([]byte(bodyText), &body)
+	if err != nil {
+		return nil, err
+	}
+	return &body, nil
 }
 
 func main() {
